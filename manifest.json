@@ -2,7 +2,7 @@
   "name": "AceAsh Tennis Coach",
   "short_name": "AceAsh",
   "description": "Tennis coaching session tracker, dashboard and scheduling assistant",
-  "start_url": "/",
+  "start_url": "/aceash/",
   "display": "standalone",
   "background_color": "#1a3a2a",
   "theme_color": "#1a3a2a",
@@ -26,12 +26,12 @@
   "shortcuts": [
     {
       "name": "Add Session",
-      "url": "/?tab=add",
+      "url": "/aceash/?tab=add",
       "description": "Log a new coaching session"
     },
     {
       "name": "Dashboard",
-      "url": "/?tab=dashboard",
+      "url": "/aceash/?tab=dashboard",
       "description": "View earnings and stats"
     }
   ]
