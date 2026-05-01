@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="theme-color" content="#1a3a2a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AceAsh"/>
+<meta name="description" content="Tennis coaching session tracker and dashboard"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png"/>
+<title>AceAsh</title>
+<style>
+  :root {
+    --green-dark: #1a3a2a;
+    --green-mid: #2d6a4f;
+    --green-accent: #4ade80;
+    --green-light: #86efac;
+    --bg: #f4f7f5;
+    --surface: #ffffff;
+    --surface2: #f0f4f2;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --border: rgba(0,0,0,0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1f17;
+      --surface: #1a2e22;
+      --surface2: #243b2d;
+      --text: #f0fdf4;
+      --text2: #86efac;
+      --text3: #4ade80;
+      --border: rgba(255,255,255,0.08);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+  #app { height: 100%; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    background: var(--green-dark);
+    padding: calc(var(--safe-top) + 14px) 16px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 36px; height: 36px; background: var(--green-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .header-title { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .header-sub { font-size: 11px; color: var(--green-light); margin-top: 1px; }
+  .header-stat { text-align: right; }
+  .header-stat .val { font-size: 16px; font-weight: 600; color: #fff; }
+  .header-stat .lbl { font-size: 10px; color: var(--green-light); }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding: 12px 14px; }
+
+  /* NAV */
+  .nav {
+    background: var(--green-dark);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .nav-btn { flex: 1; background: none; border: none; color: rgba(255,255,255,0.5); font-size: 9px; padding: 8px 2px 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; position: relative; }
+  .nav-btn.active { color: var(--green-accent); }
+  .nav-btn.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--green-accent); border-radius:0 0 2px 2px; }
+  .nav-icon { font-size: 20px; line-height: 1; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+
+  /* METRICS */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .metric { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; }
+  .metric .lbl { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .metric .val { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1; }
+  .metric .sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+  .b-llc { background: #dbeafe; color: #1e40af; }
+  .b-dom { background: #dcfce7; color: #166534; }
+  .b-priv { background: #ede9fe; color: #5b21b6; }
+  .b-clinic { background: #fef3c7; color: #92400e; }
+  .b-semi { background: #fce7f3; color: #9d174d; }
+  .b-comp { background: #dcfce7; color: #166534; }
+  .b-sched { background: #fef3c7; color: #92400e; }
+  .b-cancel { background: #fee2e2; color: #991b1b; }
+  .b-rain { background: #e0f2fe; color: #075985; }
+  .b-custom { background: #f0fdf4; color: #14532d; }
+
+  /* BARS */
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-lbl { font-size: 12px; color: var(--text2); width: 72px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+  .bar-amt { font-size: 11px; font-weight: 600; color: var(--text); min-width: 52px; text-align: right; }
+
+  /* SESSION ROW */
+  .session-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .session-row:last-child { border-bottom: none; }
+  .s-date { min-width: 40px; text-align: center; }
+  .s-date .day { font-size: 20px; font-weight: 600; color: var(--green-dark); line-height: 1; }
+  .s-date .dow { font-size: 9px; color: var(--text3); margin-top: 1px; }
+  .s-info { flex: 1; min-width: 0; }
+  .s-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .s-time { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .s-amt { font-size: 14px; font-weight: 700; color: var(--green-dark); flex-shrink: 0; }
+
+  /* CALENDAR */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-head { font-size: 9px; color: var(--text3); text-align: center; padding-bottom: 4px; font-weight: 600; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px; color: var(--text2); cursor: pointer; }
+  .cal-day.has { background: var(--green-dark); color: #fff; font-weight: 600; }
+  .cal-day.today { outline: 2px solid var(--green-accent); outline-offset: -1px; }
+  .cal-day.empty { visibility: hidden; }
+
+  /* FORM */
+  .form-group { margin-bottom: 12px; }
+  .form-lbl { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: block; font-weight: 500; }
+  .form-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 14px;
+    background: var(--surface2); color: var(--text);
+    -webkit-appearance: none; appearance: none;
+  }
+  .form-input:focus { outline: none; border-color: var(--green-mid); }
+  select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { width: 100%; padding: 13px; background: var(--green-dark); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 0.2px; }
+  .btn:active { opacity: 0.85; transform: scale(0.99); }
+  .btn-outline { background: transparent; color: var(--green-dark); border: 1.5px solid var(--green-dark); margin-top: 8px; }
+
+  /* CLIENT */
+  .client-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+  .client-row:last-child { border-bottom: none; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #dbeafe; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #1e40af; flex-shrink: 0; }
+  .c-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .c-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .c-badges { display: flex; gap: 3px; margin-top: 4px; }
+  .progress { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green-mid); border-radius: 2px; }
+
+  /* CHAT */
+  .ai-msg { background: var(--surface2); border-radius: 14px 14px 14px 3px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; color: var(--text); max-width: 85%; }
+  .user-msg { background: var(--green-dark); border-radius: 14px 14px 3px 14px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; color: #fff; max-width: 85%; margin-left: auto; }
+  .chat-wrap { display: flex; flex-direction: column; min-height: 200px; }
+  .chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 22px; font-size: 13px; background: var(--surface2); color: var(--text); }
+  .chat-send { padding: 10px 16px; background: var(--green-dark); color: #fff; border: none; border-radius: 22px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .suggest-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip { padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; cursor: pointer; color: var(--text); background: var(--surface); }
+  .chip:active { background: var(--surface2); }
+
+  /* PILLS */
+  .pill-row { display: flex; background: var(--surface2); border-radius: 22px; padding: 3px; gap: 2px; margin-bottom: 12px; }
+  .pill { flex: 1; padding: 6px 4px; text-align: center; border-radius: 20px; font-size: 11px; cursor: pointer; border: none; color: var(--text2); background: none; font-weight: 500; }
+  .pill.on { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+  /* TABS */
+  .tab-row { display: flex; gap: 6px; margin-bottom: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .tab-row::-webkit-scrollbar { display: none; }
+  .tab { padding: 5px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text2); white-space: nowrap; font-weight: 500; }
+  .tab.on { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: calc(70px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--green-dark); color: #fff; padding: 10px 20px; border-radius: 22px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* INSTALL BANNER */
+  .install-banner { background: var(--green-dark); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .install-banner.hidden { display: none; }
+  .install-text { flex: 1; font-size: 12px; color: var(--green-light); line-height: 1.4; }
+  .install-btn { padding: 7px 14px; background: var(--green-accent); color: var(--green-dark); border: none; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .dismiss-btn { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer; padding: 4px; }
+
+  .section-gap { margin-top: 4px; }
+  .inline-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .manage-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .manage-chip .rm { cursor: pointer; color: var(--text3); font-size: 14px; line-height: 1; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header" id="header">
+    <div class="header-left">
+      <div class="logo">🎾</div>
+      <div>
+        <div class="header-title">AceAsh</div>
+        <div class="header-sub">Tennis Coach</div>
+      </div>
+    </div>
+    <div class="header-stat">
+      <div class="val" id="hdr-val">—</div>
+      <div class="lbl" id="hdr-lbl">loading...</div>
+    </div>
+  </div>
+  <div class="install-banner hidden" id="install-banner">
+    <div class="install-text">📲 Install AceAsh on your home screen for the best experience</div>
+    <button class="install-btn" id="install-btn">Install</button>
+    <button class="dismiss-btn" id="dismiss-btn">✕</button>
+  </div>
+  <div class="content" id="content"></div>
+  <nav class="nav" id="nav"></nav>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SEED_SESSIONS = [
+  {id:1,date:'2025-04-01',name:'Leo & Gigi',type:'Private',entity:'LLC',time:'4-4:30 PM',amount:45,status:'Completed'},
+  {id:2,date:'2025-04-01',name:'Kaajal',type:'Private',entity:'Dominion',time:'5-6 PM',amount:60,status:'Completed'},
+  {id:3,date:'2025-04-01',name:'Brylee',type:'Private',entity:'Dominion',time:'6-7 PM',amount:100,status:'Completed'},
+  {id:4,date:'2025-04-01',name:'Naren',type:'Private',entity:'LLC',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:5,date:'2025-04-02',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Completed'},
+  {id:6,date:'2025-04-02',name:'Violet, Luis, Hanze & Trace',type:'Clinic',entity:'LLC',time:'4-5 PM',amount:100,status:'Completed'},
+  {id:7,date:'2025-04-02',name:'Sophie & Simran',type:'Semi-private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:8,date:'2025-04-02',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:9,date:'2025-04-03',name:'Gigi, Leo, Marcel, Shai',type:'Clinic',entity:'Dominion',time:'9-10 AM',amount:125,status:'Completed'},
+  {id:10,date:'2025-04-03',name:'Nelly, Nashelly, Diego',type:'Clinic',entity:'Dominion',time:'10-11:30 AM',amount:80,status:'Completed'},
+  {id:11,date:'2025-04-04',name:'Emma',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:12,date:'2025-04-04',name:'Cruz',type:'Private',entity:'Dominion',time:'11-11:30 AM',amount:35,status:'Completed'},
+  {id:13,date:'2025-04-06',name:'Angela',type:'Private',entity:'LLC',time:'7-8 AM',amount:85,status:'Completed'},
+  {id:14,date:'2025-04-06',name:'Naveen',type:'Private',entity:'LLC',time:'9-10 AM',amount:70,status:'Completed'},
+  {id:15,date:'2025-04-06',name:'Peyachi',type:'Private',entity:'LLC',time:'10-11 AM',amount:85,status:'Completed'},
+  {id:16,date:'2025-04-06',name:'Savannah',type:'Private',entity:'LLC',time:'11-12 PM',amount:85,status:'Completed'},
+  {id:17,date:'2025-04-06',name:'Melissa, JC, Piya & Vicky',type:'Private',entity:'LLC',time:'6-7 PM',amount:85,status:'Completed'},
+  {id:18,date:'2025-04-07',name:'Abril',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:19,date:'2025-04-07',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Completed'},
+  {id:20,date:'2025-04-07',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'4-5 PM',amount:85,status:'Completed'},
+  {id:21,date:'2025-04-07',name:'Ryan, Ronin, Trace & Hanze',type:'Clinic',entity:'LLC',time:'5-6 PM',amount:100,status:'Completed'},
+  {id:22,date:'2025-04-08',name:'Erica',type:'Private',entity:'LLC',time:'6-7 AM',amount:85,status:'Completed'},
+  {id:23,date:'2025-04-08',name:'Melissa',type:'Private',entity:'LLC',time:'7-8 AM',amount:85,status:'Completed'},
+  {id:24,date:'2025-04-08',name:'Matthew',type:'Private',entity:'LLC',time:'3-4 PM',amount:85,status:'Completed'},
+  {id:25,date:'2025-04-08',name:'Leo & Gigi',type:'Private',entity:'LLC',time:'4-4:30 PM',amount:45,status:'Completed'},
+  {id:26,date:'2025-04-08',name:'Neilish',type:'Private',entity:'LLC',time:'5-6 PM',amount:85,status:'Completed'},
+  {id:27,date:'2025-04-08',name:'Shelby, Sofi & Natalie',type:'Clinic',entity:'LLC',time:'9-10 AM',amount:105,status:'Completed'},
+  {id:28,date:'2025-04-09',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Completed'},
+  {id:29,date:'2025-04-09',name:'Ryan, Violet, Hanze & Trace',type:'Clinic',entity:'LLC',time:'4-5 PM',amount:100,status:'Completed'},
+  {id:30,date:'2025-04-09',name:'Sofi & Simran',type:'Semi-private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:31,date:'2025-04-09',name:'Naveen',type:'Private',entity:'LLC',time:'7-8 AM',amount:70,status:'Completed'},
+  {id:32,date:'2025-04-10',name:'Abril, Nelly, Sonia, Karla & Alina',type:'Clinic',entity:'Dominion',time:'10-11:30 AM',amount:85,status:'Completed'},
+  {id:33,date:'2025-04-10',name:'Declan',type:'Private',entity:'LLC',time:'2-3 PM',amount:85,status:'Completed'},
+  {id:34,date:'2025-04-12',name:'Hilary',type:'Private',entity:'LLC',time:'4-5 PM',amount:85,status:'Canceled'},
+  {id:35,date:'2025-04-13',name:'Melissa, JC, Piya & Vicky',type:'Private',entity:'LLC',time:'6-7 PM',amount:85,status:'Completed'},
+  {id:36,date:'2025-04-13',name:'Enrique',type:'Private',entity:'LLC',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:37,date:'2025-04-14',name:'Pablo',type:'Private',entity:'LLC',time:'8-9 AM',amount:85,status:'Completed'},
+  {id:38,date:'2025-04-14',name:'David Hobs',type:'Private',entity:'Dominion',time:'9-10 AM',amount:60,status:'Completed'},
+  {id:39,date:'2025-04-14',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Completed'},
+  {id:40,date:'2025-04-14',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'4-5 PM',amount:85,status:'Completed'},
+  {id:41,date:'2025-04-14',name:'Ryan, Ronin, Trace & Hanze',type:'Clinic',entity:'LLC',time:'5-6 PM',amount:100,status:'Completed'},
+  {id:42,date:'2025-04-14',name:'Liam & Reyansh',type:'Private',entity:'Dominion',time:'6-7 PM',amount:60,status:'Completed'},
+  {id:43,date:'2025-04-14',name:'Naren',type:'Private',entity:'LLC',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:44,date:'2025-04-15',name:'Naveen',type:'Private',entity:'LLC',time:'7-8 AM',amount:70,status:'Completed'},
+  {id:45,date:'2025-04-15',name:'Angela & Lauren',type:'Semi-private',entity:'LLC',time:'7-8 AM',amount:90,status:'Completed'},
+  {id:46,date:'2025-04-15',name:'Savannah',type:'Private',entity:'LLC',time:'6-7 PM',amount:85,status:'Completed'},
+  {id:47,date:'2025-04-15',name:'Leo & Gigi',type:'Private',entity:'LLC',time:'4-4:30 PM',amount:45,status:'Completed'},
+  {id:48,date:'2025-04-16',name:'Maggy Jones',type:'Private',entity:'Dominion',time:'7-8 AM',amount:60,status:'Completed'},
+  {id:49,date:'2025-04-16',name:'David Hobs',type:'Private',entity:'Dominion',time:'8-9 AM',amount:60,status:'Completed'},
+  {id:50,date:'2025-04-16',name:'Nat',type:'Private',entity:'LLC',time:'9-10 AM',amount:85,status:'Completed'},
+  {id:51,date:'2025-04-16',name:'Dimple',type:'Private',entity:'LLC',time:'10-11 AM',amount:85,status:'Completed'},
+  {id:52,date:'2025-04-16',name:'Ana Ochoa',type:'Private',entity:'LLC',time:'11-12 PM',amount:85,status:'Completed'},
+  {id:53,date:'2025-04-16',name:'Violet, Luis, Hanze, Trace, Ryan, Ronin',type:'Clinic',entity:'LLC',time:'4-5 PM',amount:150,status:'Completed'},
+  {id:54,date:'2025-04-16',name:'Simran & Sophie',type:'Semi-private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:55,date:'2025-04-16',name:'Naren',type:'Private',entity:'LLC',time:'6-7 PM',amount:85,status:'Completed'},
+  {id:56,date:'2025-04-16',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:57,date:'2025-04-17',name:'Shai, Erica & Brett',type:'Private',entity:'LLC',time:'4-5 PM',amount:85,status:'Completed'},
+  {id:58,date:'2025-04-17',name:'Declan & Veer',type:'Semi-private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:59,date:'2025-04-17',name:'Hunter, Hudson, Xavier, Xander',type:'Clinic',entity:'Dominion',time:'6-7 PM',amount:60,status:'Completed'},
+  {id:60,date:'2025-04-17',name:'Zara & CC',type:'Semi-private',entity:'LLC',time:'7-8 PM',amount:90,status:'Completed'},
+  {id:61,date:'2025-04-19',name:'Grayson & Soyer',type:'Private',entity:'LLC',time:'12-1 PM',amount:60,status:'Completed'},
+  {id:62,date:'2025-04-19',name:'Hilary',type:'Private',entity:'LLC',time:'4-5 PM',amount:85,status:'Completed'},
+  {id:63,date:'2025-04-22',name:'Carmen, Melba, Sammy',type:'Private',entity:'Dominion',time:'3-4:30 PM',amount:100,status:'Completed'},
+  {id:64,date:'2025-04-22',name:'Stella & Leo',type:'Semi-private',entity:'LLC',time:'4:30-5 PM',amount:45,status:'Completed'},
+  {id:65,date:'2025-04-22',name:'Dimple kids',type:'Private',entity:'LLC',time:'5-6 PM',amount:85,status:'Completed'},
+  {id:66,date:'2025-04-23',name:'Naveen',type:'Private',entity:'LLC',time:'7-8 AM',amount:70,status:'Completed'},
+  {id:67,date:'2025-04-23',name:'David Hobs',type:'Private',entity:'Dominion',time:'9-10 AM',amount:60,status:'Completed'},
+  {id:68,date:'2025-04-23',name:'Dimple',type:'Private',entity:'LLC',time:'10-11 AM',amount:85,status:'Completed'},
+  {id:69,date:'2025-04-23',name:'Ryan, Trace, Ronin, Hanze',type:'Private',entity:'LLC',time:'4-5 PM',amount:100,status:'Completed'},
+  {id:70,date:'2025-04-23',name:'Simran & Sophie',type:'Private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:71,date:'2025-04-23',name:'Liam & Reyansh',type:'Private',entity:'Dominion',time:'6-7 PM',amount:60,status:'Completed'},
+  {id:72,date:'2025-04-23',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'7-8 PM',amount:85,status:'Completed'},
+  {id:73,date:'2025-04-24',name:'Maggy Jones',type:'Private',entity:'Dominion',time:'8-9 AM',amount:60,status:'Completed'},
+  {id:74,date:'2025-04-24',name:'Alanna, Sofi, Nat, Shelby',type:'Private',entity:'LLC',time:'9-10 AM',amount:140,status:'Completed'},
+  {id:75,date:'2025-04-24',name:'Abril, Sonia, Liz, Nelly, Nashelly, Sarah',type:'Clinic',entity:'Dominion',time:'10-12 PM',amount:100,status:'Completed'},
+  {id:76,date:'2025-04-24',name:'Marcelo, Isabella, Shai, Stella, Leo & GG',type:'Clinic',entity:'LLC',time:'4-5 PM',amount:150,status:'Completed'},
+  {id:77,date:'2025-04-24',name:'Declan & Veer',type:'Private',entity:'LLC',time:'5-6 PM',amount:90,status:'Completed'},
+  {id:78,date:'2025-04-24',name:'Hunter, Hudson, Xavier, Xander',type:'Clinic',entity:'Dominion',time:'6-7 PM',amount:60,status:'Completed'},
+  {id:79,date:'2025-04-24',name:'Zara & CC',type:'Private',entity:'LLC',time:'7-8 PM',amount:90,status:'Completed'},
+  {id:80,date:'2025-04-25',name:'David Hobs',type:'Private',entity:'Dominion',time:'8-9 AM',amount:60,status:'Completed'},
+  {id:81,date:'2025-04-25',name:'Alanna',type:'Private',entity:'LLC',time:'9-10 AM',amount:85,status:'Completed'},
+  {id:82,date:'2025-04-25',name:'Celso',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:83,date:'2025-04-25',name:'Cruz',type:'Semi-private',entity:'Dominion',time:'11-11:30 AM',amount:30,status:'Completed'},
+  {id:84,date:'2025-04-26',name:'Grayson & Soyer',type:'Private',entity:'Dominion',time:'9-10 AM',amount:60,status:'Completed'},
+  {id:85,date:'2025-04-26',name:'Elena',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:86,date:'2025-04-26',name:'Jona, Tara & Hinan',type:'Private',entity:'Dominion',time:'11-12 PM',amount:60,status:'Completed'},
+  {id:87,date:'2025-04-26',name:'Shallini',type:'Private',entity:'Dominion',time:'12-1 PM',amount:85,status:'Completed'},
+  {id:88,date:'2025-04-26',name:'Matthew',type:'Private',entity:'Dominion',time:'2-3 PM',amount:85,status:'Completed'},
+  {id:89,date:'2025-04-26',name:'Peyachi',type:'Private',entity:'Dominion',time:'3-4 PM',amount:85,status:'Completed'},
+  {id:90,date:'2025-04-27',name:'Celso',type:'Private',entity:'Dominion',time:'6-7 AM',amount:60,status:'Completed'},
+  {id:91,date:'2025-04-27',name:'Naveen',type:'Private',entity:'LLC',time:'7-8 AM',amount:70,status:'Completed'},
+  {id:92,date:'2025-04-27',name:'Alanna',type:'Private',entity:'LLC',time:'9-10 AM',amount:85,status:'Completed'},
+  {id:93,date:'2025-04-27',name:'Tram Lee',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:94,date:'2025-04-27',name:'Declan',type:'Private',entity:'LLC',time:'3-4 PM',amount:85,status:'Completed'},
+  {id:95,date:'2025-04-27',name:'Melissa',type:'Private',entity:'LLC',time:'6-7 PM',amount:85,status:'Completed'},
+  {id:96,date:'2025-04-27',name:'Damasoo, Enrique & Arturo',type:'Clinic',entity:'LLC',time:'7-8 PM',amount:105,status:'Completed'},
+  {id:97,date:'2025-04-28',name:'David Hobs',type:'Private',entity:'Dominion',time:'8-9 AM',amount:60,status:'Completed'},
+  {id:98,date:'2025-04-28',name:'Abril Barrera',type:'Private',entity:'Dominion',time:'10-11 AM',amount:60,status:'Completed'},
+  {id:99,date:'2025-04-28',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Completed'},
+  {id:100,date:'2025-04-28',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'LLC',time:'4-5 PM',amount:60,status:'Completed'},
+  {id:101,date:'2025-04-28',name:'Ronin, Ryan, Trace, Hanze',type:'Clinic',entity:'LLC',time:'5-6 PM',amount:100,status:'Completed'},
+  {id:102,date:'2025-04-28',name:'Liam & Reyansh',type:'Semi-private',entity:'LLC',time:'6-7 PM',amount:60,status:'Completed'},
+  {id:103,date:'2025-04-28',name:'Carmen & Nelly',type:'Private',entity:'Dominion',time:'2-3 PM',amount:60,status:'Completed'},
+  {id:104,date:'2025-04-29',name:'Lauren',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Scheduled'},
+  {id:105,date:'2025-04-29',name:'Leo & Gigi',type:'Semi-private',entity:'LLC',time:'4-4:30 PM',amount:45,status:'Scheduled'},
+  {id:106,date:'2025-04-29',name:'Stella & Leo',type:'Semi-private',entity:'LLC',time:'4:30-5 PM',amount:45,status:'Scheduled'},
+  {id:107,date:'2025-04-29',name:'Neilish & Aryan',type:'Private',entity:'LLC',time:'5-6 PM',amount:85,status:'Scheduled'},
+  {id:108,date:'2025-05-05',name:'Declan',type:'Private',entity:'LLC',time:'1-2 PM',amount:85,status:'Scheduled'},
+  {id:109,date:'2025-05-05',name:'Naveen',type:'Private',entity:'LLC',time:'7-8 AM',amount:70,status:'Scheduled'},
+  {id:110,date:'2025-05-06',name:'Angela',type:'Private',entity:'LLC',time:'7-8 AM',amount:85,status:'Scheduled'},
+  {id:111,date:'2025-05-06',name:'Adam, Sameer, Layla, Cruz',type:'Clinic',entity:'Dominion',time:'7-8 PM',amount:85,status:'Scheduled'},
+];
+
+const SEED_CLIENTS = [
+  {id:1,name:'Declan',entity:'LLC',type:'Private',sessions:8,revenue:680,notes:'Weekly Tue/Thu/Mon. Very consistent.'},
+  {id:2,name:'Naveen',entity:'LLC',type:'Private',sessions:5,revenue:350,notes:'Mornings only. Improving backhand.'},
+  {id:3,name:'Angela',entity:'LLC',type:'Private',sessions:4,revenue:340,notes:'Early bird 7am. Also semi-private.'},
+  {id:4,name:'David Hobs',entity:'Dominion',type:'Private',sessions:5,revenue:300,notes:'Thu/Sat mornings. Consistent.'},
+  {id:5,name:'Maggy Jones',entity:'Dominion',type:'Private',sessions:3,revenue:180,notes:'Morning sessions. Working on serve.'},
+  {id:6,name:'Abril',entity:'Dominion',type:'Private',sessions:3,revenue:180,notes:'Tuesdays. Junior player.'},
+  {id:7,name:'Naren',entity:'LLC',type:'Private',sessions:3,revenue:255,notes:'Evening slots. Competitive player.'},
+  {id:8,name:'Adam/Sameer/Layla/Cruz',entity:'Dominion',type:'Clinic',sessions:6,revenue:510,notes:'Tue/Thu clinic group.'},
+  {id:9,name:'Leo & Gigi',entity:'LLC',type:'Semi-private',sessions:4,revenue:180,notes:'Siblings. Wed 4-4:30 PM.'},
+  {id:10,name:'Alanna',entity:'LLC',type:'Private',sessions:3,revenue:255,notes:'Also joins group sessions.'},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let sessions = loadData('aceash_sessions', SEED_SESSIONS);
+let clients = loadData('aceash_clients', SEED_CLIENTS);
+let entities = loadData('aceash_entities', ['LLC', 'Dominion']);
+let sessionTypes = loadData('aceash_types', ['Private', 'Clinic', 'Semi-private']);
+let currentTab = 'dashboard';
+let dashPeriod = 'april';
+let schedFilter = 'upcoming';
+let chatHistory = [
+  {role:'ai', text:"Hi! I'm your AceAsh assistant 🎾 I can answer questions about your schedule, earnings, tax estimates, and help plan new sessions. Try a quick prompt below or ask me anything!"}
+];
+let deferredPrompt = null;
+
+function loadData(key, fallback) {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : fallback; } catch(e) { return fallback; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+function saveAll() {
+  save('aceash_sessions', sessions);
+  save('aceash_clients', clients);
+  save('aceash_entities', entities);
+  save('aceash_types', sessionTypes);
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function getInitials(name) {
+  const p = name.trim().split(/[\s,&\/\+]+/).filter(Boolean);
+  return ((p[0]||'')[0]+(p[1]?p[1][0]:p[0]?.[1]||'')).toUpperCase();
+}
+function fmtMoney(n) { return '$' + n.toLocaleString(); }
+function badgeClass(val, map) { return map[val] || 'b-custom'; }
+const ENTITY_MAP = {LLC:'b-llc', Dominion:'b-dom'};
+const TYPE_MAP = {Private:'b-priv', Clinic:'b-clinic', 'Semi-private':'b-semi'};
+const STATUS_MAP = {Completed:'b-comp', Scheduled:'b-sched', Canceled:'b-cancel', Rain:'b-rain'};
+const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function getStats(period) {
+  const filter = s => {
+    const d = new Date(s.date);
+    if (period === 'april') return d.getMonth() === 3 && d.getFullYear() === 2025;
+    if (period === 'may') return d.getMonth() === 4 && d.getFullYear() === 2025;
+    return d.getFullYear() === 2025;
+  };
+  const all = sessions.filter(filter);
+  const done = all.filter(s => s.status === 'Completed');
+  const income = done.reduce((a,s)=>a+s.amount,0);
+  const byEntity = {};
+  entities.forEach(e => {
+    const es = done.filter(s=>s.entity===e);
+    byEntity[e] = {count:es.length, income:es.reduce((a,s)=>a+s.amount,0)};
+  });
+  const byType = {};
+  sessionTypes.forEach(t => {
+    const ts = done.filter(s=>s.type===t);
+    byType[t] = {count:ts.length, income:ts.reduce((a,s)=>a+s.amount,0)};
+  });
+  return {total:done.length, income, tax:+(income*0.3).toFixed(0), avg:done.length?+(income/done.length).toFixed(0):0, byEntity, byType, scheduled:all.filter(s=>s.status==='Scheduled').length};
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────────
+function updateHeader() {
+  const s = getStats('april');
+  document.getElementById('hdr-val').textContent = fmtMoney(s.income);
+  document.getElementById('hdr-lbl').textContent = 'April income';
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+const TABS = [
+  {id:'dashboard',icon:'📊',label:'Dashboard'},
+  {id:'schedule',icon:'📅',label:'Schedule'},
+  {id:'add',icon:'➕',label:'Add'},
+  {id:'clients',icon:'👥',label:'Clients'},
+  {id:'assist',icon:'🤖',label:'Assist'},
+];
+function renderNav() {
+  document.getElementById('nav').innerHTML = TABS.map(t=>
+    `<button class="nav-btn ${currentTab===t.id?'active':''}" onclick="goTab('${t.id}')">
+      <span class="nav-icon">${t.icon}</span>${t.label}
+    </button>`).join('');
+}
+function goTab(tab) { currentTab=tab; renderNav(); renderContent(); }
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderContent() {
+  const el = document.getElementById('content');
+  if (currentTab==='dashboard') el.innerHTML = renderDashboard();
+  else if (currentTab==='schedule') el.innerHTML = renderSchedule();
+  else if (currentTab==='add') el.innerHTML = renderAdd();
+  else if (currentTab==='clients') el.innerHTML = renderClients();
+  else if (currentTab==='assist') el.innerHTML = renderAssist();
+  // scroll to top
+  el.scrollTop = 0;
+}
+
+// DASHBOARD
+function renderDashboard() {
+  const s = getStats(dashPeriod);
+  const maxE = Math.max(...Object.values(s.byEntity).map(e=>e.income), 1);
+  const maxT = Math.max(...Object.values(s.byType).map(t=>t.income), 1);
+  const entityColors = ['#185FA5','#3B6D11','#BA7517','#993556','#534AB7'];
+  const typeColors = ['#534AB7','#BA7517','#993556','#3B6D11','#185FA5'];
+  return `
+  <div class="pill-row">
+    <button class="pill ${dashPeriod==='april'?'on':''}" onclick="setDP('april')">April</button>
+    <button class="pill ${dashPeriod==='may'?'on':''}" onclick="setDP('may')">May</button>
+    <button class="pill ${dashPeriod==='year'?'on':''}" onclick="setDP('year')">2025</button>
+  </div>
+  <div class="metric-grid">
+    <div class="metric"><div class="lbl">Sessions done</div><div class="val">${s.total}</div><div class="sub">${s.scheduled} upcoming</div></div>
+    <div class="metric"><div class="lbl">Total income</div><div class="val">${fmtMoney(s.income)}</div><div class="sub">earned</div></div>
+    <div class="metric"><div class="lbl">Tax set aside</div><div class="val">${fmtMoney(s.tax)}</div><div class="sub">30% of income</div></div>
+    <div class="metric"><div class="lbl">Avg / session</div><div class="val">${fmtMoney(s.avg)}</div><div class="sub">per lesson</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">By category</div>
+    ${entities.map((e,i)=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${e}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${((s.byEntity[e]?.income||0)/maxE*100).toFixed(0)}%;background:${entityColors[i%entityColors.length]};"></div></div>
+      <div class="bar-amt">${fmtMoney(s.byEntity[e]?.income||0)}</div>
+    </div>`).join('')}
+    <div class="inline-chips" style="margin-top:8px;">
+      ${entities.map(e=>`<span class="badge ${ENTITY_MAP[e]||'b-custom'}">${e}: ${s.byEntity[e]?.count||0} sessions</span>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">By session type</div>
+    ${sessionTypes.map((t,i)=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${t}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${((s.byType[t]?.income||0)/maxT*100).toFixed(0)}%;background:${typeColors[i%typeColors.length]};"></div></div>
+      <div class="bar-amt">${fmtMoney(s.byType[t]?.income||0)}</div>
+    </div>`).join('')}
+    <div class="inline-chips" style="margin-top:8px;">
+      ${sessionTypes.map(t=>`<span class="badge ${TYPE_MAP[t]||'b-custom'}">${t}: ${s.byType[t]?.count||0}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+// SCHEDULE
+function renderSchedule() {
+  const year=2025, month=3;
+  const startDow = new Date(year,month,1).getDay();
+  const daysInMonth = 30;
+  const sessionDays = new Set(sessions.filter(s=>s.date.startsWith('2025-04')).map(s=>+s.date.split('-')[2]));
+  const today = new Date();
+  const todayNum = (today.getFullYear()===2025 && today.getMonth()===3) ? today.getDate() : -1;
+
+  let displaySessions;
+  if (schedFilter==='upcoming') displaySessions = sessions.filter(s=>s.date>='2025-04-29').sort((a,b)=>a.date.localeCompare(b.date));
+  else if (schedFilter==='completed') displaySessions = sessions.filter(s=>s.status==='Completed').slice(-20).reverse();
+  else if (schedFilter==='canceled') displaySessions = sessions.filter(s=>s.status==='Canceled'||s.status==='Rain').reverse();
+  else displaySessions = sessions.slice(-20).reverse();
+
+  return `
+  <div class="card">
+    <div class="card-title">April 2025</div>
+    <div class="cal-grid">
+      ${DAYS.map(d=>`<div class="cal-head">${d}</div>`).join('')}
+      ${Array.from({length:startDow},()=>'<div class="cal-day empty"></div>').join('')}
+      ${Array.from({length:daysInMonth},(_,i)=>i+1).map(d=>`
+        <div class="cal-day ${sessionDays.has(d)?'has':''} ${d===todayNum?'today':''}">${d}</div>`).join('')}
+    </div>
+  </div>
+  <div class="tab-row">
+    <button class="tab ${schedFilter==='upcoming'?'on':''}" onclick="setSF('upcoming')">Upcoming</button>
+    <button class="tab ${schedFilter==='all'?'on':''}" onclick="setSF('all')">Recent</button>
+    <button class="tab ${schedFilter==='completed'?'on':''}" onclick="setSF('completed')">Completed</button>
+    <button class="tab ${schedFilter==='canceled'?'on':''}" onclick="setSF('canceled')">Canceled</button>
+  </div>
+  <div class="card">
+    ${displaySessions.length===0 ? '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No sessions found</div>' :
+    displaySessions.map(s=>`
+    <div class="session-row">
+      <div class="s-date">
+        <div class="s-date day">${s.date.split('-')[2]}</div>
+        <div class="s-date dow">${DAYS[new Date(s.date).getDay()]||''}</div>
+      </div>
+      <div class="s-info">
+        <div class="s-name">${s.name}</div>
+        <div class="s-badges">
+          <span class="badge ${TYPE_MAP[s.type]||'b-custom'}">${s.type}</span>
+          <span class="badge ${ENTITY_MAP[s.entity]||'b-custom'}">${s.entity}</span>
+          <span class="badge ${STATUS_MAP[s.status]||'b-custom'}">${s.status}</span>
+        </div>
+        <div class="s-time">${s.time}</div>
+      </div>
+      <div class="s-amt">${fmtMoney(s.amount)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ADD SESSION
+function renderAdd() {
+  return `
+  <div class="card-title" style="margin-bottom:10px;">Log a session</div>
+  <div class="card">
+    <div class="form-group">
+      <label class="form-lbl">Client name</label>
+      <input class="form-input" id="a-name" placeholder="e.g. Declan, Leo & Gigi" autocomplete="off"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-lbl">Date</label>
+        <input class="form-input" id="a-date" type="date" value="${new Date().toISOString().split('T')[0]}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Time slot</label>
+        <input class="form-input" id="a-time" placeholder="7-8 AM"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-lbl">Session type</label>
+        <select class="form-input" id="a-type">${sessionTypes.map(t=>`<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Category</label>
+        <select class="form-input" id="a-entity">${entities.map(e=>`<option>${e}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-lbl">Amount ($)</label>
+        <input class="form-input" id="a-amt" type="number" placeholder="85" inputmode="numeric"/>
+      </div>
+      <div class="form-group">
+        <label class="form-lbl">Status</label>
+        <select class="form-input" id="a-status">
+          <option>Scheduled</option><option>Completed</option><option>Canceled</option><option>Rain</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-lbl">Notes (optional)</label>
+      <input class="form-input" id="a-notes" placeholder="Any notes..."/>
+    </div>
+    <button class="btn" onclick="addSession()">Add Session</button>
+  </div>
+
+  <div class="card-title" style="margin:14px 0 10px;">Manage categories</div>
+  <div class="card">
+    <div class="form-lbl" style="margin-bottom:8px;">Current categories</div>
+    <div class="inline-chips">
+      ${entities.map(e=>`<span class="manage-chip">${e}<span class="rm" onclick="removeEntity('${e}')">×</span></span>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input class="form-input" id="new-ent" placeholder="New category" style="flex:1;"/>
+      <button class="btn" style="width:auto;padding:10px 16px;font-size:13px;" onclick="addEntity()">Add</button>
+    </div>
+  </div>
+
+  <div class="card-title" style="margin:14px 0 10px;">Manage session types</div>
+  <div class="card">
+    <div class="inline-chips">
+      ${sessionTypes.map(t=>`<span class="manage-chip">${t}<span class="rm" onclick="removeType('${t}')">×</span></span>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <input class="form-input" id="new-type" placeholder="New session type" style="flex:1;"/>
+      <button class="btn" style="width:auto;padding:10px 16px;font-size:13px;" onclick="addType()">Add</button>
+    </div>
+  </div>`;
+}
+
+// CLIENTS
+function renderClients() {
+  const avatarColors = ['#dbeafe|#1e40af','#dcfce7|#166534','#ede9fe|#5b21b6','#fce7f3|#9d174d','#fef3c7|#92400e','#fee2e2|#991b1b'];
+  return `
+  <div class="card-title" style="margin-bottom:10px;">Client roster (${clients.length})</div>
+  <div class="card">
+    ${clients.map((c,i)=>{
+      const [bg,fg] = avatarColors[i%avatarColors.length].split('|');
+      return `
+    <div class="client-row">
+      <div class="avatar" style="background:${bg};color:${fg};">${getInitials(c.name)}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="c-name">${c.name}</div>
+        <div class="c-meta">${c.sessions} sessions · ${fmtMoney(c.revenue)} earned</div>
+        <div class="c-badges">
+          <span class="badge ${ENTITY_MAP[c.entity]||'b-custom'}">${c.entity}</span>
+          <span class="badge ${TYPE_MAP[c.type]||'b-custom'}">${c.type}</span>
+        </div>
+        ${c.notes?`<div style="font-size:10px;color:var(--text3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.notes}</div>`:''}
+        <div class="progress"><div class="progress-fill" style="width:${Math.min(c.sessions/10*100,100)}%;"></div></div>
+      </div>
+    </div>`;}).join('')}
+  </div>
+
+  <div class="card-title" style="margin:14px 0 10px;">Add new client</div>
+  <div class="card">
+    <div class="form-group"><label class="form-lbl">Name</label><input class="form-input" id="cl-name" placeholder="Client name"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-lbl">Category</label><select class="form-input" id="cl-ent">${entities.map(e=>`<option>${e}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-lbl">Main type</label><select class="form-input" id="cl-type">${sessionTypes.map(t=>`<option>${t}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-group"><label class="form-lbl">Notes</label><input class="form-input" id="cl-notes" placeholder="Schedule preferences, goals..."/></div>
+    <button class="btn" onclick="addClient()">Add Client</button>
+  </div>`;
+}
+
+// ASSIST
+function renderAssist() {
+  return `
+  <div class="card-title" style="margin-bottom:10px;">Scheduling assistant</div>
+  <div class="suggest-chips">
+    <span class="chip" onclick="sendQ('What are my busiest days?')">Busiest days?</span>
+    <span class="chip" onclick="sendQ('LLC vs Dominion breakdown')">LLC vs Dominion</span>
+    <span class="chip" onclick="sendQ('Tax estimate for April')">Tax estimate</span>
+    <span class="chip" onclick="sendQ('Best slot for a new private client?')">New client slot</span>
+    <span class="chip" onclick="sendQ('How many clinics this month?')">Clinic count</span>
+    <span class="chip" onclick="sendQ('Average revenue per session type')">Avg by type</span>
+  </div>
+  <div id="chat-msgs" style="display:flex;flex-direction:column;gap:2px;min-height:160px;">
+    ${chatHistory.map(m=>`<div class="${m.role==='ai'?'ai-msg':'user-msg'}">${m.text}</div>`).join('')}
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chat-inp" placeholder="Ask anything about your coaching..." onkeydown="if(event.key==='Enter')doChat()"/>
+    <button class="chat-send" onclick="doChat()">Send</button>
+  </div>`;
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function setDP(p) { dashPeriod=p; renderContent(); }
+function setSF(f) { schedFilter=f; renderContent(); }
+
+function addSession() {
+  const name = document.getElementById('a-name').value.trim();
+  const date = document.getElementById('a-date').value;
+  const time = document.getElementById('a-time').value.trim();
+  const type = document.getElementById('a-type').value;
+  const entity = document.getElementById('a-entity').value;
+  const amount = parseFloat(document.getElementById('a-amt').value)||0;
+  const status = document.getElementById('a-status').value;
+  if (!name||!date) { showToast('⚠️ Name and date required'); return; }
+  const s = {id:Date.now(),date,name,type,entity,time,amount,status};
+  sessions.push(s);
+  if (status==='Completed') {
+    const ci = clients.findIndex(c=>c.name.toLowerCase()===name.toLowerCase());
+    if (ci>=0) { clients[ci].sessions++; clients[ci].revenue+=amount; }
+  }
+  saveAll();
+  showToast('✅ Session added!');
+  updateHeader();
+  renderContent();
+}
+
+function addClient() {
+  const name = document.getElementById('cl-name').value.trim();
+  if (!name) { showToast('⚠️ Enter a client name'); return; }
+  clients.push({id:Date.now(),name,entity:document.getElementById('cl-ent').value,type:document.getElementById('cl-type').value,sessions:0,revenue:0,notes:document.getElementById('cl-notes').value.trim()});
+  saveAll(); showToast('✅ Client added!'); renderContent();
+}
+
+function addEntity() {
+  const v = document.getElementById('new-ent').value.trim();
+  if (v && !entities.includes(v)) { entities.push(v); saveAll(); renderContent(); }
+}
+function removeEntity(e) {
+  if (entities.length<=1) { showToast('⚠️ Keep at least one category'); return; }
+  entities = entities.filter(x=>x!==e); saveAll(); renderContent();
+}
+function addType() {
+  const v = document.getElementById('new-type').value.trim();
+  if (v && !sessionTypes.includes(v)) { sessionTypes.push(v); saveAll(); renderContent(); }
+}
+function removeType(t) {
+  if (sessionTypes.length<=1) { showToast('⚠️ Keep at least one type'); return; }
+  sessionTypes = sessionTypes.filter(x=>x!==t); saveAll(); renderContent();
+}
+
+// ─── ASSISTANT ───────────────────────────────────────────────────────────────
+function aiResponse(msg) {
+  const s = getStats('april'); const l = msg.toLowerCase();
+  if (l.includes('busiest')||l.includes('busy day')) {
+    const counts={};
+    sessions.forEach(se=>{ const d=new Date(se.date); const day=DAYS_FULL[d.getDay()]; counts[day]=(counts[day]||0)+1; });
+    const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    return `Your busiest days: ${sorted.slice(0,3).map(([d,c])=>`${d} (${c})`).join(', ')}. I'd protect those slots for your most loyal clients.`;
+  }
+  if (l.includes('llc') && (l.includes('domin')||l.includes('breakdown')||l.includes('vs'))) {
+    const llc=s.byEntity['LLC']||{count:0,income:0}; const dom=s.byEntity['Dominion']||{count:0,income:0};
+    return `April breakdown — LLC: ${llc.count} sessions, ${fmtMoney(llc.income)} | Dominion: ${dom.count} sessions, ${fmtMoney(dom.income)}. LLC makes up ${s.total?((llc.count/s.total)*100).toFixed(0):0}% of your load.`;
+  }
+  if (l.includes('tax')) return `April income: ${fmtMoney(s.income)}. At 30%, set aside ${fmtMoney(s.tax)}. Consider quarterly IRS estimated payments (due Jan, Apr, Jun, Sep). Keep your LLC and Dominion income separate for cleaner reporting.`;
+  if (l.includes('slot')||l.includes('new client')) return `Your lightest days are Sundays and early Saturday mornings. A 7-8 AM Saturday private slot or a Sunday noon slot would fit without disrupting your existing schedule. Private sessions average ${fmtMoney(s.byType['Private']?.income&&s.byType['Private']?.count ? Math.round(s.byType['Private'].income/s.byType['Private'].count):85)}/session.`;
+  if (l.includes('clinic')) { const c=s.byType['Clinic']||{count:0,income:0}; return `Clinics this period: ${c.count} sessions earning ${fmtMoney(c.income)}. At ${c.count?fmtMoney(Math.round(c.income/c.count)):'—'} avg each, they're efficient — good income per hour of your time.`; }
+  if (l.includes('avg')||l.includes('average')) return `Average per session: ${fmtMoney(s.avg)}. Private: ${fmtMoney(s.byType['Private']?.count?Math.round(s.byType['Private'].income/s.byType['Private'].count):0)} | Clinic: ${fmtMoney(s.byType['Clinic']?.count?Math.round(s.byType['Clinic'].income/s.byType['Clinic'].count):0)} | Semi-private: ${fmtMoney(s.byType['Semi-private']?.count?Math.round(s.byType['Semi-private'].income/s.byType['Semi-private'].count):0)}.`;
+  if (l.includes('income')||l.includes('earn')||l.includes('money')||l.includes('revenue')) return `April total: ${fmtMoney(s.income)} from ${s.total} completed sessions. That's ${fmtMoney(s.avg)} average per session. After 30% tax set-aside (${fmtMoney(s.tax)}), your take-home is ${fmtMoney(s.income-s.tax)}.`;
+  if (l.includes('dominion')) { const d=s.byEntity['Dominion']||{count:0,income:0}; return `Dominion clients: ${d.count} sessions, ${fmtMoney(d.income)} this period. Popular time slots are evenings Tue-Thu.`; }
+  return `You've completed ${s.total} sessions earning ${fmtMoney(s.income)} this month. I can help with: busiest days, LLC vs Dominion breakdown, tax estimates, slot planning, clinic stats, or revenue by type. What would you like to know?`;
+}
+
+function sendQ(msg) {
+  chatHistory.push({role:'user',text:msg});
+  chatHistory.push({role:'ai',text:aiResponse(msg)});
+  renderContent();
+  setTimeout(()=>{ const el=document.getElementById('chat-msgs'); if(el) el.scrollTop=el.scrollHeight; },50);
+}
+
+function doChat() {
+  const inp = document.getElementById('chat-inp');
+  const msg = (inp?.value||'').trim();
+  if (!msg) return;
+  sendQ(msg);
+}
+
+// ─── PWA / INSTALL ───────────────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  const banner = document.getElementById('install-banner');
+  if (banner) banner.classList.remove('hidden');
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (deferredPrompt) { deferredPrompt.prompt(); const r = await deferredPrompt.userChoice; deferredPrompt=null; document.getElementById('install-banner').classList.add('hidden'); }
+});
+document.getElementById('dismiss-btn').addEventListener('click', () => {
+  document.getElementById('install-banner').classList.add('hidden');
+});
+window.addEventListener('appinstalled', () => { showToast('🎾 AceAsh installed!'); });
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderNav();
+renderContent();
+updateHeader();
+
+// Register service worker for offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
